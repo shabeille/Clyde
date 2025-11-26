@@ -1,3 +1,4 @@
+import os
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 import re
@@ -13,7 +14,7 @@ MAX_MEMORY = 100
 MAX_MESSAGE_LENGTH = 2000
 MAX_SIMULTANEOUS_PROMPTS = 4
 SUMMARISE_CONVERSATIONS = True
-MODEL = 'qwen2.5:3b'
+MODEL = 'gpt-oss:20b-cloud'
 SUMMARY_MODEL = 'qwen3:0.6b'
 TOKEN = '' # enter your token here
 
@@ -26,7 +27,6 @@ summariser_message = [
 ]
 
 executor = ThreadPoolExecutor()
-prompt_semaphore = asyncio.Semaphore(MAX_SIMULTANEOUS_PROMPTS)
 
 async def get_response(messages_list, model):
     output = { 'message' : {'content' : ''}}
@@ -36,7 +36,7 @@ async def get_response(messages_list, model):
             loop = asyncio.get_running_loop()
             output = await loop.run_in_executor(
                 executor,
-                lambda: ollama.chat(model=model, messages=messages_list)
+                lambda: ollama.chat(model=model, messages=messages_list, think=False)
             )
         except ConnectionError:
             start_ollama()
@@ -225,5 +225,10 @@ class MyClient(discord.Client):
 
 
 if __name__ == '__main__':
+    if not os.path.exists('token.txt'):
+        raise Exception('No token.txt file - make one and store your userbot token in it')
+
+    token = open('token.txt', 'r').read().strip(' ')
+
     client = MyClient()
-    client.run(TOKEN)
+    client.run(token)

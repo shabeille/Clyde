@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b6a94c04-4c1e-4960-98a7-095f60ebe503" name="Changes" comment="modified prompts, removed &quot;summarisation&quot; in lieu of simple truncation, etc." />
+    <list default="true" id="b6a94c04-4c1e-4960-98a7-095f60ebe503" name="Changes" comment="modified prompts" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -82,7 +82,7 @@
       <workItem from="1764187355184" duration="1967000" />
       <workItem from="1764190153930" duration="5162000" />
       <workItem from="1764244593874" duration="690000" />
-      <workItem from="1764276120455" duration="2031000" />
+      <workItem from="1764276120455" duration="2736000" />
     </task>
     <task id="LOCAL-00001" summary="test">
       <option name="closed" value="true" />
@@ -188,7 +188,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764278159765</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="modified prompts">
+      <option name="closed" value="true" />
+      <created>1764279158457</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1764279158457</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -213,7 +221,8 @@
     <MESSAGE value="initial commit" />
     <MESSAGE value="added reading token from txt file (to be improved)" />
     <MESSAGE value="modified prompts, removed &quot;summarisation&quot; in lieu of simple truncation, etc." />
-    <option name="LAST_COMMIT_MESSAGE" value="modified prompts, removed &quot;summarisation&quot; in lieu of simple truncation, etc." />
+    <MESSAGE value="modified prompts" />
+    <option name="LAST_COMMIT_MESSAGE" value="modified prompts" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Clyde$main.coverage" NAME="main Coverage Results" MODIFIED="1764191208822" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

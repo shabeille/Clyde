@@ -12,7 +12,7 @@ import prompts
 
 MAX_MEMORY = 100
 MAX_MESSAGE_LENGTH = 2000
-MODEL = 'gpt-oss:20b-cloud'
+MODEL = 'qwen3-vl:235b-cloud'
 executor = ThreadPoolExecutor()
 
 async def get_response(messages_list, model):

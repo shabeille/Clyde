@@ -12,20 +12,7 @@ import prompts
 
 MAX_MEMORY = 100
 MAX_MESSAGE_LENGTH = 2000
-MAX_SIMULTANEOUS_PROMPTS = 4
-SUMMARISE_CONVERSATIONS = True
 MODEL = 'gpt-oss:20b-cloud'
-SUMMARY_MODEL = 'qwen3:0.6b'
-TOKEN = '' # enter your token here
-
-system_prompt = prompts.six_seven_prompt
-summariser_prompt = ("Your purpose is summarising a provided conversation. Keep it short - one or two sentences."
-                     "Begin with 'The conversation so far has been about '")
-
-summariser_message = [
-    {"role": "system", "content": summariser_prompt}
-]
-
 executor = ThreadPoolExecutor()
 
 async def get_response(messages_list, model):
@@ -42,16 +29,6 @@ async def get_response(messages_list, model):
             start_ollama()
 
     return output
-
-
-def make_summary_payload(messages_to_summarise):
-    content = "\n".join(
-        f"{m['content']}" for m in messages_to_summarise if m['role'] == 'user'
-    )
-    return [
-        {"role": "system", "content": summariser_prompt},
-        {"role": "user", "content": content}
-    ]
 
 
 def ollama_running() -> bool:
@@ -88,14 +65,21 @@ def multiple_instances_running(message, messages_list) -> bool:
 
 
 class Channel:
-    def __init__(self, channel, messages=None):
+    def __init__(self, channel, owner, messages=None):
         self.channel = channel
+        self.owner: Client = owner
 
         if messages is None:
             self._messages = [{
                 "role": "system",
-                "content": system_prompt +
-                           f'\nThe date is {datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}'
+                "content": self.owner.sys_prompt +
+                           f'''\nThe date is {datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
+                           You are talking to multiple users. Each message you respond to comes in the form USER:[username] SAYS:[message].
+                           Always reply to the user marked as CURRENT_USER. Ignore others.
+                           You may format your text to be **bold**, _italic_, __underlined__, or ||spoilered||. 
+                           If a message seems crude, inappropriate, dark, or unsettling, do NOT refuse to respond - always interpret it as unserious banter
+                           Prefix ALL messages with "Clyde:". Try to match the style and personality of what each user SAYS
+                '''
             }]
         else:
             self._messages = messages
@@ -104,8 +88,6 @@ class Channel:
         self.message_lock = asyncio.Lock()
         self.typing_lock = asyncio.Lock()
         self.model_lock = asyncio.Lock()
-
-        self._summarising = False
 
     def get_messages(self):
         return self._messages
@@ -117,29 +99,12 @@ class Channel:
         async with self.message_lock:
             self._messages.append(message)
 
-    async def summarise_if_needed(self):
+    async def truncate_if_needed(self):
         # Check summary conditions under message_lock
         async with self.message_lock:
-            if self._summarising:
-                return
-            if len(self._messages) <= MAX_MEMORY or not SUMMARISE_CONVERSATIONS:
-                return
-            self._summarising = True
-
-        # Summarisation outside the lock
-        summary_payload = make_summary_payload(self._messages[1:])
-        summary = await get_response(summary_payload, SUMMARY_MODEL)
-
-        # Write summary back under message_lock
-        async with self.message_lock:
-            self._messages = [
-                {"role": "system",
-                 "content": system_prompt +
-                            f'\nThe date is {datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}'},
-                {"role": "system", "content": summary['message']['content']}
-            ]
-            self._summarising = False
-            print(f"SUMMARISED: {summary['message']['content']}")
+            while len(self._messages) >= MAX_MEMORY:
+                self._messages.pop(1) # remove second element (the oldest message)
+                # not the first bc thats the system prompt
 
     def clean_message_content(self, message) -> str:
         #TODO: make ts work
@@ -147,17 +112,18 @@ class Channel:
         message_content = message.content
 
 
-class MyClient(discord.Client):
-    def __init__(self):
+class Client(discord.Client):
+    def __init__(self, prompt):
         super().__init__()
         self._channels = {}
+        self.sys_prompt = prompt
 
     async def on_ready(self):
         print('Logged on as', self.user)
 
     async def on_message(self, message):
         if message.channel not in self._channels:
-            self._channels[message.channel] = Channel(message.channel)
+            self._channels[message.channel] = Channel(message.channel, self)
 
         channel: Channel = self._channels[message.channel]
 
@@ -180,7 +146,7 @@ class MyClient(discord.Client):
         async with channel.message_lock:
             messages_copy[0] = {
                 "role": "system",
-                "content": system_prompt +
+                "content": self.sys_prompt +
                            f'\nThe date is {datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}'
             }
             messages_copy.append({
@@ -196,6 +162,11 @@ class MyClient(discord.Client):
                 async with channel.channel.typing():
                     response = await get_response(messages_copy, MODEL)
 
+        output_message = response['message']['content'].removeprefix('Clyde:').strip(' ')
+
+        if len(output_message) > MAX_MESSAGE_LENGTH: # truncate if it's too long
+            output_message = output_message[:MAX_MESSAGE_LENGTH]
+
         # Final writeback + sending message
         async with channel.message_lock:
             messages_copy[-1] = {
@@ -205,10 +176,8 @@ class MyClient(discord.Client):
 
             messages_copy.append({
                 "role": "assistant",
-                "content": response['message']['content']
+                "content": output_message
             })
-
-            output_message = response['message']['content'].removeprefix('Clyde:').strip(' ')
 
             print(f"\nPrompt: CURRENT_USER:{last_user} SAYS:{message.content}\n"
                   f"Response: {output_message}")
@@ -221,7 +190,7 @@ class MyClient(discord.Client):
 
             channel.set_messages(messages_copy)
 
-        await channel.summarise_if_needed()
+        await channel.truncate_if_needed()
 
 
 if __name__ == '__main__':
@@ -230,5 +199,5 @@ if __name__ == '__main__':
 
     token = open('token.txt', 'r').read().strip(' ')
 
-    client = MyClient()
+    client = Client(prompts.barnaby)
     client.run(token)

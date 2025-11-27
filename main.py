@@ -12,7 +12,7 @@ import prompts
 
 MAX_MEMORY = 100
 MAX_MESSAGE_LENGTH = 2000
-MODEL = 'qwen3-vl:235b-cloud'
+MODEL = 'gpt-oss:20b-cloud'
 executor = ThreadPoolExecutor()
 
 async def get_response(messages_list, model):
@@ -199,5 +199,5 @@ if __name__ == '__main__':
 
     token = open('token.txt', 'r').read().strip(' ')
 
-    client = Client(prompts.judge)
+    client = Client(prompts.rizzbot_prompt)
     client.run(token)

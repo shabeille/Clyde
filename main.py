@@ -199,5 +199,5 @@ if __name__ == '__main__':
 
     token = open('token.txt', 'r').read().strip(' ')
 
-    client = Client(prompts.slackbot)
+    client = Client(prompts.eli)
     client.run(token)
